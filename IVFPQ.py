@@ -1,4 +1,3 @@
-
 import numpy as np
 import os
 from sklearn.cluster import MiniBatchKMeans
@@ -10,14 +9,15 @@ DIMENSION = 70
 class IVF_PQ:
     def __init__(self, d: int, k: int, probes: int, m: int, sub_clusters: int,
                  index_file_path,
+                 batch_size = 1000, 
                  train_limit=10**6, iterations=128, new_index=True) -> None:
-        self.D = d                                              # initial vector dimensions
-        self.K = k                                              # number of clusters for IVF
-        self.K_ = probes                                        # number of clusters retrieved
+        self.D = d                                              # Initial vector dimensions
+        self.K = k                                              # Number of clusters for IVF
+        self.K_ = probes                                        # Number of clusters retrieved
         self.M = m                                              # PQ subvector count
-        self.D_ = d // m                                        # dimensions per subvector
-        self.sub_clusters = sub_clusters                       # number of sub-clusters for PQ
-
+        self.D_ = d // m                                        # Dimensions per subvector
+        self.sub_clusters = sub_clusters                       # Number of sub-clusters for PQ
+        self.batch_size = batch_size 
         self.train_limit = train_limit
         self.iterations = iterations
 
@@ -36,32 +36,28 @@ class IVF_PQ:
                 os.remove(self.pq_centroids_path)
 
     def generate_ivf_pq_index(self, database: np.ndarray):
-        print("Kmeans Starting...")
 
         # Using a small batch of data for k-means if dataset is large
         training_data, predicting_data = database[:self.train_limit], database[self.train_limit:]
 
         # Apply MiniBatchKMeans instead of kmeans2 for better memory management
-        kmeans = MiniBatchKMeans(n_clusters=self.K, max_iter=self.iterations, init='k-means++', batch_size=1000)
+        kmeans = MiniBatchKMeans(n_clusters=self.K, max_iter=self.iterations, init='k-means++', batch_size=self.batch_size)
         kmeans.fit(training_data)
 
         self.ivf_centroids = kmeans.cluster_centers_
         vectors = kmeans.predict(training_data)
 
         np.savetxt(self.centroids_path, self.ivf_centroids)
-        print("Kmeans IVF Finitio")
 
         # Parallelize cluster processing
         def process_cluster(i):
-            ids, = np.where(vectors == i)
+            ids = np.where(vectors == i)[0]  # Retrieve vector IDs
             cluster = database[ids]
 
             # Dynamically adjust sub-clusters based on cluster size
             sub_clusters = min(self.sub_clusters, cluster.shape[0])
             if sub_clusters != self.sub_clusters:
                 print(f"Warning: Cluster {i} has fewer than {self.sub_clusters} points. Adjusting sub_clusters to {sub_clusters}")
-            print(f"Warning: Cluster {i} has {cluster.shape[0]} points.")
-            print("IVF FINITO ")
 
             # PQ: Refining each cluster using MiniBatchKMeans for each sub-cluster
             pq_centroids = np.zeros((self.M, sub_clusters, self.D_))
@@ -75,14 +71,13 @@ class IVF_PQ:
                 pq_codebook[j, :] = pq_kmeans.predict(cluster[:, j * self.D_:(j + 1) * self.D_])
 
             cluster_index_path = os.path.join(self.clusters_path, f"cluster{i}")
+            # Save IDs instead of vectors
             np.savez(cluster_index_path, pq_centroids=pq_centroids, pq_codebook=pq_codebook, ids=ids)
-            print("PQ FINITO ")
 
         # Use parallel processing to handle the clusters concurrently
         Parallel(n_jobs=-1)(delayed(process_cluster)(i) for i in range(self.K))
 
         print("All clusters processed.")
-
 
     def load_ivf_centroids(self):
         self.ivf_centroids = np.loadtxt(self.centroids_path)
@@ -93,7 +88,6 @@ class IVF_PQ:
         # Step 1: Find the nearest clusters using IVF centroids
         distances = self._compute_cosine_similarity(self.ivf_centroids, query)
         nearest_clusters = np.argsort(distances)[-self.K_:]
-        print("IVF FINITO Searching")
 
         # Step 2: Retrieve candidates from nearest clusters
         candidates = []

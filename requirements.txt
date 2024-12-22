@@ -1,0 +1,4 @@
+numpy
+memory-profiler
+sklearn.cluster
+joblib

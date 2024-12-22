@@ -47,7 +47,7 @@ class VecDB:
                 self.SubClusters = 4096
                 train_limit=2_000_000
             elif db_size <= 20_000_000:  # 20M
-                self.K = 80
+                self.k = 100
                 self.M = 10
                 self.Probes = 100000
                 batchSize = 10000

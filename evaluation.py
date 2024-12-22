@@ -3,7 +3,7 @@ import time
 from dataclasses import dataclass
 from typing import List
 
-from vec_db import VectorDataBase
+from vec_db import VecDB
 
 
 
@@ -59,7 +59,7 @@ def eval(results: List[Result]):
 
 
 if __name__ == "__main__":
-    db = VectorDataBase(d=70, m=10, pqk=2**8, k=50, probes=100,sub_clusters=32, new_db=True, db_size=20*(10 ** 4))
+    db = VecDB(d=70, m=10, k=50, probes=100,sub_clusters=512, new_db=False, db_size=1*(10 ** 6),index_file_path="./index_1m_k50")
 
     query = np.random.random((1, 70))
     db.retrieve(query, 5)

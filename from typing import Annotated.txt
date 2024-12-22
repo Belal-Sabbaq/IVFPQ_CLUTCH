@@ -11,33 +11,38 @@ class VecDB:
     def __init__(self,  sub_clusters: int,d=70, m=10, k=50, probes=100,
                  database_file_path="./assets/databases/saved_db_1m.dat",
                  index_file_path = "./assets/indexes/ivf_pq",
-                 new_db=True, db_size=None) -> None:
         self.D = d
+                 new_db=True, db_size=None) -> None:
         self.M = m
         self.k = k
-        self.index_file_path = index_file_path
         self.Probes = probes
         self.Probes = probes
         self.SubClusters = sub_clusters
         self.db_path = database_file_path
         self.database_size = db_size
-        if (index_file_path == "./index_1m_k50/") : 
-            sub_clusters = 512
+        if self.database_size == 1*(10 ** 6):
+            folder_name = "index_1m_k50/"
+        elif self.database_size == 10_000_000:
+            folder_name = "index_10m_k50/"
+        elif self.database_size == 15_000_000:
+            folder_name = "index_15m_k50"
+        elif self.database_size == 20_000_000:
+            folder_name = "index_20m_k50/"
         else:
-            sub_clusters= 4096
+            folder_name = ""
         if new_db:
             if os.path.exists(self.db_path):
                 os.remove(self.db_path)
-            self.ivf_pq = IVF_PQ(self.D, self.k, self.Probes, self.M, self.SubClusters,self.index_file_path )
+            self.ivf_pq = IVF_PQ(self.D, self.k, self.Probes, self.M, self.SubClusters,index_file_path)
             self.generate_database()
         else:
-            
-            self.ivf_pq = IVF_PQ(self.D, self.k, self.Probes, self.M, self.SubClusters, self.index_file_path,new_index=False)
+            self.ivf_pq = IVF_PQ(self.D, self.k, self.Probes, self.M, self.SubClusters, index_file_path,new_index=False)
 
     def generate_database(self) -> None:
         rng = np.random.default_rng(DB_SEED_NUMBER)
         vectors = rng.random((self.database_size, DIMENSION), dtype=np.float32)
         self._write_vectors_to_file(vectors)
+        self._build_index()
 
     def _write_vectors_to_file(self, vectors: np.ndarray) -> None:
         mmap_vectors = np.memmap(self.db_path, dtype=np.float32, mode='w+', shape=vectors.shape)

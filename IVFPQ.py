@@ -129,5 +129,4 @@ class IVF_PQ:
         norm_vec2 = np.linalg.norm(vec2)
         norm = norm_vec1 * norm_vec2
         distances = dot_product / norm
-
         return distances

@@ -8,7 +8,7 @@ ELEMENT_SIZE = np.dtype(np.float32).itemsize
 DIMENSION = 70
 
 class VecDB:
-    def __init__(self,  sub_clusters: int,d=70, m=10, k=50, probes=10000,
+    def __init__(self,  sub_clusters =512,d=70, m=10, k=50, probes=10000,
                  database_file_path="./assets/databases/saved_db_20m.dat",
                  index_file_path = "./assets/indexes/ivf_pq/index_20m_k50/",
                  new_db=True, db_size=None) -> None:

@@ -59,7 +59,7 @@ def eval(results: List[Result]):
 
 
 if __name__ == "__main__":
-    db = VecDB(d=70, m=10, k=50, probes=100,sub_clusters=32, new_db=False, db_size=20_000_000)
+    db = VecDB(d=70, m=10, k=50, probes=100, new_db=False, db_size=20_000_000)
 
     query = np.random.random((1, 70))
     db.retrieve(query, 5)
